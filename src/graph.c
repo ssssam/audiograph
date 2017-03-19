@@ -65,21 +65,9 @@ static double log_scale(double linear)
         return log(1.+linear) / log(2.);
 }
 
-cairo_surface_t *graph_draw(struct graph *gr, int width, int height, double *colour)
+void graph_draw(struct graph *gr, cairo_t *cr, int width, int height, double *colour)
 {
-    cairo_surface_t *surface;
-    cairo_t *cr;
     int i;
-
-    /* Create Cairo surface and set background as transparent */
-    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
-    if(cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS)
-        return NULL;
-    cr = cairo_create(surface);
-    if(cairo_status(cr) != CAIRO_STATUS_SUCCESS)
-        return NULL;
-    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0); /* technically white, but transparent */
-    cairo_paint(cr);
 
     /* Set drawing colour and line width */
     cairo_set_source_rgb(cr, colour[0], colour[1], colour[2]);
@@ -91,7 +79,7 @@ cairo_surface_t *graph_draw(struct graph *gr, int width, int height, double *col
     cairo_stroke(cr);
 
     /* Plot the samples as a verical line between min and max value for 
-     * each pixel (with logarithmic scale) and return the surface */
+     * each pixel (with logarithmic scale) */
     for(i = 0; i < width; i ++)
     {
         double x, y_min, y_max;
@@ -116,16 +104,6 @@ cairo_surface_t *graph_draw(struct graph *gr, int width, int height, double *col
         cairo_line_to(cr, x, y_max);
         cairo_stroke(cr);
     }
-    cairo_destroy(cr);
-
-    return surface;
-}
-
-void graph_surface_destroy(cairo_surface_t *surface)
-{
-    cairo_surface_destroy(surface);
-
-    return;
 }
 
 void graph_destroy(struct graph *gr)

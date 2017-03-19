@@ -21,6 +21,7 @@
 #ifndef AUDIOGRAPH_H
 #define AUDIOGRAPH_H
 
+#include <cairo.h>
 
 /* wav.c */
 
@@ -56,13 +57,9 @@ int graph_buffer_samples(struct graph *, float *, int);
  * input audio data will be appropriately binned in pixel intervals
  * and plotted in the given colour against a transparent background.
  * Logarithmic scale used for y-axis (amplitude).
- * This function returns a Cairo ARGB32 surface, which can be output to 
- * various disk and in-memory graphics formats using Cairo functions, 
- * e.g. cairo_surface_write_to_png(). */
-cairo_surface_t *graph_draw(struct graph *, int width, int height, double *colour);
-
-/* Free the memory used by a Cairo surface returned from graph_draw(). */
-void graph_surface_destroy(cairo_surface_t *);
+ *
+ * The cairo context must be cretead in an appropriate surface. */
+void graph_draw(struct graph *, cairo_t *cr, int width, int height, double *colour);
 
 /* Free the memory used by the sample buffer */
 void graph_destroy(struct graph *);

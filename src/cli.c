@@ -41,6 +41,7 @@ int main(int argc, char **argv)
 
     struct graph *gr;
     cairo_surface_t *surface;
+    cairo_t *cr;
 
 
     /* Validate and parse command-line arguments */
@@ -83,19 +84,29 @@ int main(int argc, char **argv)
     /* Close input file */
     wav_close(wav);
 
-    /* Draw graph and output to PNG file using Cairo */
-    if( !(surface = graph_draw(gr, width, height, colour)))
-    {
+    /* Create Cairo surface and set background as transparent */
+    surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
+    if(cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS) {
         fprintf(stderr, "Error initialising Cairo; out of memory?\n");
         return 1;
     }
+    cr = cairo_create(surface);
+    if(cairo_status(cr) != CAIRO_STATUS_SUCCESS) {
+        fprintf(stderr, "Error initialising Cairo; out of memory?\n");
+        return 1;
+    }
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0); /* technically white, but transparent */
+    cairo_paint(cr);
+
+    /* Draw graph and output to PNG file using Cairo */
+    graph_draw(gr, cr, width, height, colour);
     if(cairo_surface_write_to_png(surface, argv[2]) != CAIRO_STATUS_SUCCESS)
     {
         fprintf(stderr, "Error writing graph to PNG file\n");
         return 1;
     }
 
-    graph_surface_destroy(surface);
+    cairo_surface_destroy(surface);
     graph_destroy(gr);
 
     return 0;
