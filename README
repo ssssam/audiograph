@@ -22,25 +22,16 @@ There are two required dependencies:
 * Cairo
   http://www.cairographics.org/
 
-These must be present and installed before this program can be built. An
-autoconf-based "configure script" is used to configure the locations of
-libraries and the optional dependencies. The usual options are accepted; the
-most relevant here being:
+The Meson build system is used.
 
-  --with-sndfile-includes=DIRS
-                          libsndfile include files are in DIRS
-  --with-sndfile-libs=DIRS
-                          libsndfile library files are in DIRS
-  --with-cairo-includes=DIRS
-                          Cairo include files are in DIRS
-  --with-cairo-libs=DIRS  Cairo library files are in DIRS
+You can run it like this:
 
-A typical configure line (Bourne shell syntax) might be:
+    mkdir build
+    meson ..
+    ninja-build
 
-CFLAGS=-O3 LDFLAGS=-s ./configure --prefix=/usr --with-cairo-includes=/usr/include/cairo
-
-Then a simple "make" will compile the program. "make install" will install
-to the specified prefix.
+You can pass various parameters to Meson configure install locations, and
+the usual environment variables like CFLAGS are honoured too.
 
 
 Usage
