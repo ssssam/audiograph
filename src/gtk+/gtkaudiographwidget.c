@@ -5,7 +5,6 @@
 struct _GtkAudioGraphWidget {
   GtkDrawingArea parent;
   struct graph *gr;
-  GBytes *buffer;
 };
 
 enum {
@@ -25,7 +24,7 @@ draw (GtkWidget *widget,
   GtkStyleContext *context;
   double color_array[3];
 
-  if (self->buffer != NULL) {
+  if (self->gr != NULL) {
     context = gtk_widget_get_style_context (widget);
 
     width = gtk_widget_get_allocated_width (widget);
@@ -66,26 +65,27 @@ set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *p
 
   switch (prop_id)
     {
-    case PROP_BUFFER:
-      /* FIXME: we don't really need the extra GBytes to stay around ... */
-      if (self->buffer != NULL) {
-        g_bytes_unref (self->buffer);
+    case PROP_BUFFER: {
+      GBytes *buffer;
+
+      if (self->gr != NULL) {
+        graph_destroy (self->gr);
       }
 
-      self->buffer = g_value_get_boxed (value);
+      buffer = g_value_get_boxed (value);
 
-      if (self->buffer) {
+      if (buffer) {
         gsize length;
         gconstpointer data;
 
-        data = g_bytes_get_data (self->buffer, &length);
+        data = g_bytes_get_data (buffer, &length);
+
+        self->gr = graph_init ();
 
         graph_buffer_samples (self->gr, (float *) data, length / 4);
-
-        g_bytes_ref (self->buffer);
-        g_debug ("Received buffer %p of %i bytes", self->buffer, g_bytes_get_size (self->buffer));
       }
       break;
+    }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -96,15 +96,12 @@ static void
 finalize (GObject *object) {
   GtkAudioGraphWidget *self = GTK_AUDIO_GRAPH_WIDGET (object);
 
-  if (self->buffer)
-    g_bytes_unref (self->buffer);
-
-  graph_destroy (self->gr);
+  if (self->gr)
+    graph_destroy (self->gr);
 }
 
 static void
 gtk_audio_graph_widget_init (GtkAudioGraphWidget *self) {
-  self->gr = graph_init ();
 }
 
 static void
@@ -138,7 +135,48 @@ gtk_audio_graph_widget_class_init (GtkAudioGraphWidgetClass *class)
  *
  * Returns: (transfer full): a new #GtkWidget
  */
-GtkWidget *gtk_audio_graph_widget_new() {
+GtkWidget *gtk_audio_graph_widget_new () {
   return g_object_new (GTK_AUDIO_GRAPH_TYPE_WIDGET, NULL);
 }
 
+/**
+ * gtk_audio_graph_widget_load_file:
+ * @self: a #GtkAudioGraphWidget
+ * @filename: the path to a .wav file
+ * @error: (allow-none): return location for a #GError, or %NULL
+ *
+ * Loads data from a .wav file to display.
+ *
+ * Returns: %TRUE if there was no error, %FALSE otherwise.
+ */
+gboolean
+gtk_audio_graph_widget_load_file (GtkAudioGraphWidget *self, const char *filename, GError **error)
+{
+  if (self->gr)
+    graph_destroy (self->gr);
+
+  struct wav_file *wav;
+  if( !(wav = wav_open(filename)))
+  {
+    g_set_error (error, gtk_audio_graph_error_quark(), GTK_AUDIO_GRAPH_ERROR_IO,
+                 "Unable to open input audio file %s", filename);
+    return FALSE;
+  }
+
+  /* Buffer all samples from input file. */
+  self->gr = graph_init();
+
+  const int CHUNK_SIZE = 2048;
+  while(1)
+  {
+    float samples[CHUNK_SIZE];
+    int sample_count = wav_read_samples(wav, samples, CHUNK_SIZE);
+
+    if(sample_count == 0) /* end of input */
+        break;
+
+    graph_buffer_samples(self->gr, samples, sample_count);
+  }
+
+  return TRUE;
+}
