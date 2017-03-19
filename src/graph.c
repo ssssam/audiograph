@@ -34,6 +34,10 @@ struct graph *graph_init(void)
 {
     struct graph *gr = calloc(1, sizeof(struct graph));
 
+    gr->sample_count = 0;
+    gr->max_samples = 0;
+    gr->buff = NULL;
+
     return gr;
 }
 
