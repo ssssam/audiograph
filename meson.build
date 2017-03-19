@@ -1,5 +1,7 @@
 project('audiograph', 'c')
 
+gnome = import('gnome')
+
 cairo = dependency('cairo')
 sndfile = dependency('sndfile')
 
